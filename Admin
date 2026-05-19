@@ -1,1 +1,434 @@
-# Admin-Pg
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUDKO ULTRA MASTER ADMIN CONTROL CENTER v7.5</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #060913; --card: #0f172a; --border: #1e293b;
+            --primary: #6366f1; --accent: #10b981; --danger: #ef4444; --warning: #f59e0b; --purple: #8b5cf6;
+        }
+        body { background: var(--bg); color: #ffffff !important; font-family: 'Segoe UI', system-ui, sans-serif; padding: 25px 15px; }
+        
+        .stat-card { background: linear-gradient(135deg, #0f172a, #1e293b); border: 1px solid var(--border); border-radius: 16px; padding: 20px; text-align: center; position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+        .sc-blue::before { background: var(--primary); }
+        .sc-green::before { background: var(--accent); }
+        .sc-red::before { background: var(--danger); }
+        .sc-purple::before { background: var(--purple); }
+        
+        .admin-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin-bottom: 20px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4); }
+        
+        input, select, textarea { 
+            background-color: #1e293b !important; border: 1px solid #334155 !important; color: #ffffff !important; 
+            margin-bottom: 12px; padding: 12px; border-radius: 10px; width: 100%; font-size: 14px;
+        }
+        input::placeholder { color: #94a3b8 !important; }
+        label { color: #cbd5e1 !important; font-weight: 500; margin-bottom: 4px; display: block; font-size: 13px; }
+        .text-muted { color: #94a3b8 !important; }
+        
+        .table-dark { --bs-table-bg: #0f172a; color: #ffffff !important; font-size: 14px; }
+        .table-dark td, .table-dark th { color: #ffffff !important; border-color: #1e293b; padding: 14px 10px; }
+        
+        .btn-action { font-weight: 600; border-radius: 10px; padding: 12px; width: 100%; transition: all 0.2s; }
+        .blacklist-item { background: #1a101f; border: 1px solid #581c1c; border-radius: 10px; padding: 12px; margin-bottom: 8px; font-size: 13px; color: #ffffff; }
+        
+        .btn-filter { background: #1e293b; color: #94a3b8; border: 1px solid #334155; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px; transition: all 0.2s; }
+        .btn-filter.active { background: var(--primary); color: #ffffff; border-color: var(--primary); box-shadow: 0 0 10px rgba(99, 102, 241, 0.4); }
+        
+        .badge-live { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; padding: 5px 10px; border-radius: 6px; }
+        .badge-lock { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; padding: 5px 10px; border-radius: 6px; }
+        
+        #secureAuthGate { position: fixed; top:0; left:0; width:100%; height:100%; background:#060913; z-index: 99999; display: flex; align-items:center; justify-content:center; }
+
+        /* ಪ್ರಿಂಟ್ ಲೇಔಟ್ ಎಂಜಿನ್ ಸ್ಟೈಲ್ಸ್ */
+        @media print {
+            body * { visibility: hidden; background: #ffffff !important; color: #000000 !important; }
+            #printDumpArea, #printDumpArea * { visibility: visible; }
+            #printDumpArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+            .print-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            .print-table th, .print-table td { border: 1px solid #000000 !important; padding: 10px; text-align: left; color: #000000 !important; }
+            .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="secureAuthGate">
+    <div class="admin-card text-center w-100" style="max-width: 400px; border-color: var(--danger); background: #0f172a;">
+        <h4 class="text-danger fw-bold mb-3"><i class="fas fa-user-shield"></i> HUDKO MASTER GATEPIN</h4>
+        <input type="password" id="rootPinField" placeholder="••••" style="text-align: center; font-size: 24px; letter-spacing: 10px;">
+        <button class="btn btn-danger btn-action" id="btnVerifyRoot"><i class="fas fa-key"></i> Authenticate Control Room</button>
+    </div>
+</div>
+
+<div id="centralControlLayout" style="display: none;">
+    <div class="text-center mb-4">
+        <h1 class="text-danger fw-bold m-0" style="letter-spacing: 1px;"><i class="fas fa-shield-alt"></i> HUDKO CENTRAL FIREWALL</h1>
+        <p class="text-muted small fw-bold">PAN-KARNATAKA ENTERPRISE LIVE MONITORING BOARD • 2026</p>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card sc-blue"><span class="text-muted small d-block uppercase fw-bold">TOTAL DEPLOYMENTS</span><h2 id="stat_totalOwners" class="text-primary fw-bold mt-1">0</h2></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card sc-green"><span class="text-muted small d-block uppercase fw-bold">ESTIMATED MRR</span><h2 id="stat_totalRevenue" class="text-accent fw-bold mt-1">₹0</h2></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card sc-purple"><span class="text-muted small d-block uppercase fw-bold">TOTAL LIVE PG BRANCHES</span><h2 id="stat_totalBranches" class="text-purple fw-bold mt-1">0</h2></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card sc-red"><span class="text-muted small d-block uppercase fw-bold">ACTIVE STUDENT NODES</span><h2 id="stat_totalStudents" class="text-danger fw-bold mt-1">0</h2></div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="admin-card border-success">
+                <h5 class="text-success mb-3 fw-bold"><i class="fas fa-key"></i> 1. PROVISION NEW LICENSE (LOCAL)</h5>
+                <label>Landlord / Corporate PG Name</label>
+                <input type="text" id="ownerName" placeholder="e.g., Manipal Elite Living">
+                <label>Owner Official Email ID</label>
+                <input type="email" id="ownerEmail" placeholder="e.g., owner@gmail.com">
+                <label>Secure License Token ID (Unique Key)</label>
+                <input type="text" id="ownerCustomKey" placeholder="e.g., NITESH_MANIPAL_101">
+                <label>License Expiry Date</label>
+                <input type="date" id="licenseExpiryDate">
+                <label>Tier Architecture Engine</label>
+                <select id="ownerPlanSelect">
+                    <option value="starter">Starter Architecture (1 PG Limit - ₹499)</option>
+                    <option value="pro">Pro Architecture (Unlimited PG - ₹999)</option>
+                </select>
+                <button class="btn btn-success btn-action mt-1" id="btnCreateLicense"><i class="fas fa-plus-circle"></i> Activate Server Node</button>
+            </div>
+
+            <div class="admin-card border-primary" style="border: 1px solid var(--primary);">
+                <h5 class="text-primary mb-3 fw-bold"><i class="fas fa-print"></i> 2. OFFICE REPORT ENGINE</h5>
+                <p class="text-muted mb-3" style="font-size: 12px;">ವೆಬ್‌ಸೈಟ್ ಲ್ಯಾಂಡಿಂಗ್ ಪೇಜ್ ಮೂಲಕ ಕಸ್ಟಮರ್ಸ್ ಪಡೆದ ಆಟೋಮ್ಯಾಟಿಕ್ ಲೈಸೆನ್ಸ್‌ಗಳ ವಿವರವನ್ನು ಪ್ರಿಂಟ್ ಮಾಡಿ ಆಫೀಸ್‌ನಲ್ಲಿ ಫೈಲ್ ಮಾಡಲು ಈ ಕೆಳಗಿನ ಬಟನ್ ಒತ್ತಿ.</p>
+                <button class="btn btn-outline-primary btn-action text-white" style="border: 1px solid var(--primary);" id="btnPrintWebOrders"><i class="fas fa-file-invoice"></i> Print Website Applications</button>
+            </div>
+
+            <div class="admin-card border-warning">
+                <h5 class="text-warning mb-3 fw-bold"><i class="fas fa-bullhorn"></i> 3. NOTICE INJECTOR ENGINE</h5>
+                <textarea id="globalBroadcastMessage" rows="2" placeholder="Type system-wide notice here..."></textarea>
+                <button class="btn btn-warning btn-action mt-1 text-dark" id="btnInjectBroadcast"><i class="fas fa-paper-plane"></i> Inject System Notice</button>
+            </div>
+            
+            <div class="admin-card border-purple" style="border: 1px solid var(--purple);">
+                <h5 class="text-purple mb-3 fw-bold"><i class="fas fa-magic"></i> 4. QUICK TRIAL GENERATOR</h5>
+                <button class="btn btn-outline-purple btn-action text-white" style="border:1px solid var(--purple);" id="btnQuickTrial"><i class="fas fa-gift"></i> Provision Custom Trial Node</button>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="admin-card">
+                <div class="d-md-flex justify-content-between align-items-center mb-3 flex-wrap g-2">
+                    <h5 class="text-warning fw-bold m-0"><i class="fas fa-server"></i> 5. LIVE CLIENT NETWORK TELEMETRY</h5>
+                    <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-filter active" id="filterAll">All Nodes</button>
+                            <button type="button" class="btn btn-filter" id="filterDirect">Direct Keys</button>
+                            <button type="button" class="btn btn-filter" id="filterWebsite">Website Orders</button>
+                        </div>
+                        <div class="search-box" style="min-width: 150px; position: relative;">
+                            <input type="text" id="adminSearchInput" placeholder="Search..." style="margin-bottom:0; padding-left: 35px;">
+                            <i class="fas fa-search" style="position: absolute; left: 12px; top: 14px; color: #94a3b8;"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle border border-secondary rounded">
+                        <thead>
+                            <tr>
+                                <th>CLIENT NODE DETAILS</th>
+                                <th>CONFIG TIERS</th>
+                                <th>EXPIRY DATE</th>
+                                <th>STATUS</th>
+                                <th class="text-center">ACTION MANAGEMENT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ownersTableBody">
+                            <tr><td colspan="5" class="text-center text-muted py-4"><i class="fas fa-sync fa-spin"></i> Synchronizing core cluster logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-card border-danger">
+                <h5 class="text-danger fw-bold mb-3"><i class="fas fa-user-slash"></i> 6. CENTRAL DEFAULTER REGISTRY CONTROL</h5>
+                <div id="blacklistLiveStream" class="row g-2" style="max-height: 200px; overflow-y: auto;">
+                    <div class="text-center text-muted py-3 w-100">Syncing database registries...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="printDumpArea"></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, get, child, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBE41ujYp8a9wkdAvcZM5SoPPFrzImNdrk",
+      authDomain: "pg-app-software.firebaseapp.com",
+      projectId: "pg-app-software",
+      storageBucket: "pg-app-software.firebasestorage.app",
+      messagingSenderId: "297515252662",
+      appId: "1:297515252662:web:f99698f24a8380589a1f17",
+      databaseURL: "https://pg-app-software-default-rtdb.firebaseio.com"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    let globalOwnersCachedData = {};
+    let activeBlacklistData = {};
+    let currentFilterMode = "all";
+
+    document.getElementById('rootPinField').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('btnVerifyRoot').click();
+    });
+
+    document.getElementById('btnVerifyRoot').addEventListener('click', () => {
+        if(document.getElementById('rootPinField').value.trim() === "9090") {
+            document.getElementById('secureAuthGate').style.display = 'none';
+            document.getElementById('centralControlLayout').style.display = 'block';
+            startMasterEcosystemSync();
+        } else { alert("🚨 ACCESS DENIED: Authentication Error."); }
+    });
+
+    function startMasterEcosystemSync() {
+        onValue(ref(database, 'owners'), (snapshot) => {
+            globalOwnersCachedData = snapshot.val() || {};
+            executeLicenseAutomatedChronology();
+            renderOwnersGrid();
+        });
+        onValue(ref(database, 'global_blacklist'), (snapshot) => {
+            activeBlacklistData = snapshot.val() || {};
+            renderBlacklistRegistry();
+        });
+        get(ref(database, 'global_settings/broadcast')).then((snap) => {
+            if(snap.exists()) document.getElementById('globalBroadcastMessage').value = snap.val().text || "";
+        });
+    }
+
+    function executeLicenseAutomatedChronology() {
+        const todayStr = new Date().toISOString().split('T')[0];
+        Object.keys(globalOwnersCachedData).forEach(key => {
+            const node = globalOwnersCachedData[key];
+            if(node && node.license && node.license.expiryDate < todayStr && node.license.status === "Active") {
+                update(ref(database, 'owners/' + key + '/license'), { status: "Locked" });
+            }
+        });
+    }
+
+    document.getElementById('btnInjectBroadcast').addEventListener('click', () => {
+        const msg = document.getElementById('globalBroadcastMessage').value.trim();
+        if(!msg) return alert("Notice input space empty.");
+        set(ref(database, 'global_settings/broadcast'), { text: msg, timestamp: new Date().toLocaleString() })
+        .then(() => alert("📡 SYSTEM NOTICE INJECTED LIVE!"));
+    });
+
+    document.getElementById('btnQuickTrial').addEventListener('click', () => {
+        const name = prompt("Enter Client Name for Trial:"); if(!name) return;
+        const email = prompt("Enter Owner Email ID:"); if(!email) return alert("Email Required.");
+        const key = prompt("Enter Unique Key (e.g., Trial_Udupi_88):"); if(!key) return;
+        const daysInput = prompt("Enter Trial Days:", "30"); if(!daysInput) return;
+        
+        const trialDays = parseInt(daysInput);
+        if(isNaN(trialDays) || trialDays <= 0) return alert("Invalid count.");
+
+        const expiryDateObj = new Date(); expiryDateObj.setDate(expiryDateObj.getDate() + trialDays);
+        const expiryStr = expiryDateObj.toISOString().split('T')[0];
+
+        set(ref(database, 'owners/' + key + '/license'), {
+            ownerName: name, ownerEmail: email.trim().toLowerCase(), licenseKey: key, planId: "starter", price: 0, bedLimit: 30, expiryDate: expiryStr, status: "Active"
+        }).then(() => alert(`🎉 TRIAL CONFIGURED SUCCESS FOR ${key}`));
+    });
+
+    document.getElementById('btnCreateLicense').addEventListener('click', () => {
+        const name = document.getElementById('ownerName').value.trim();
+        const email = document.getElementById('ownerEmail').value.trim().toLowerCase();
+        const key = document.getElementById('ownerCustomKey').value.trim();
+        const expiry = document.getElementById('licenseExpiryDate').value;
+        const plan = document.getElementById('ownerPlanSelect').value;
+        if(!name || !email || !key || !expiry) return alert("Please fill all deployment variables!");
+        
+        const priceValue = plan === 'starter' ? 499 : 999;
+        const bedLimitValue = plan === 'starter' ? 30 : 500;
+
+        set(ref(database, 'owners/' + key + '/license'), {
+            ownerName: name, ownerEmail: email, licenseKey: key, planId: plan, price: priceValue, bedLimit: bedLimitValue, expiryDate: expiry, status: "Active"
+        }).then(() => {
+            alert(`🚀 LOCAL CLUSTER NODE DEPLOYED LIVE: ${key}`);
+            document.getElementById('ownerName').value = ''; document.getElementById('ownerEmail').value = ''; document.getElementById('ownerCustomKey').value = '';
+        });
+    });
+
+    window.sendWhatsAppReminder = function(key, name, plan, price, expiry) {
+        const textMessage = `*%F0%9F%9A%A0 HUDKO ULTRA ERP SUBSCRIPTION REPORT*%0A%0AHello *${name}*,%0AYour deployment parameters are registered under core node:%0A%0A*License Key:* ${key}%0A*Subscribed Engine:* ${plan.toUpperCase()}%0A*Tariff Plan:* INR ${price}/mo%0A*Node Terminus Expiry:* ${expiry}%0A%0A_Kindly settle subscription charges to prevent systematic lock downs._%0A%0A*HUDKO TECHNOLOGY SYSTEMS ENGINE*`;
+        window.open(`https://api.whatsapp.com/send?text=${textMessage}`, '_blank');
+    };
+
+    window.toggleOwnerLock = function(key, currentStatus) { 
+        update(ref(database, 'owners/' + key + '/license'), { status: currentStatus === "Active" ? "Locked" : "Active" }); 
+    };
+    window.purgeOwnerNodeCompletely = function(key) { 
+        if(confirm("🚨 CRITICAL WARNING: Erase entire cluster data?")) remove(ref(database, 'owners/' + key)); 
+    };
+    window.adminPurgeBlacklistRecord = function(k) { remove(ref(database, 'global_blacklist/' + k)); };
+    
+    // ಆಪ್ಷನ್ ಬಟನ್ ಫಿಲ್ಟರ್ ಈವೆಂಟ್ ಲಿಸನರ್ಸ್
+    const filterBtns = document.querySelectorAll('.btn-filter');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            
+            if(e.target.id === 'filterAll') currentFilterMode = "all";
+            if(e.target.id === 'filterDirect') currentFilterMode = "direct";
+            if(e.target.id === 'filterWebsite') currentFilterMode = "website";
+            
+            renderOwnersGrid();
+        });
+    });
+
+    document.getElementById('adminSearchInput').addEventListener('input', () => renderOwnersGrid());
+
+    function renderOwnersGrid() {
+        const tbody = document.getElementById('ownersTableBody'); tbody.innerHTML = '';
+        const keyword = document.getElementById('adminSearchInput').value.toLowerCase().trim();
+        
+        let act = 0, lck = 0, rev = 0, totalBranches = 0, totalStudents = 0;
+        
+        Object.keys(globalOwnersCachedData).forEach(key => {
+            const node = globalOwnersCachedData[key]; if(!node || !node.license) return;
+            const lic = node.license; 
+            
+            if(lic.status === "Locked") lck++; else act++; 
+            rev += parseInt(lic.price || 0);
+
+            if(node.appData) {
+                if(Array.isArray(node.appData)) {
+                    totalBranches += node.appData.length;
+                    node.appData.forEach(b => { if(b && b.students) totalStudents += Object.keys(b.students).length; });
+                } else if(typeof node.appData === 'object') {
+                    totalBranches += Object.keys(node.appData).length;
+                    Object.keys(node.appData).forEach(bk => {
+                        if(node.appData[bk] && node.appData[bk].students) totalStudents += Object.keys(node.appData[bk].students).length;
+                    });
+                }
+            }
+
+            // ವೆಬ್‌ಸೈಟ್ ಆಟೋಮ್ಯಾಟಿಕ್ ಕೀ ಫಿಲ್ಟರಿಂಗ್ ಕೋರ್ ಲಾಜಿಕ್ (HUDKO_WEB_)
+            const isWebsiteOrder = key.startsWith("HUDKO_WEB_");
+            if (currentFilterMode === "direct" && isWebsiteOrder) return;
+            if (currentFilterMode === "website" && !isWebsiteOrder) return;
+            if (keyword !== "" && !lic.ownerName.toLowerCase().includes(keyword) && !lic.licenseKey.toLowerCase().includes(keyword)) return;
+            
+            const badge = lic.status === "Locked" ? `<span class="badge-lock">Suspended</span>` : `<span class="badge-live">Live</span>`;
+            const rowSourceStyle = isWebsiteOrder ? `border-left: 4px solid var(--accent);` : `border-left: 4px solid var(--primary);`;
+            const sourceBadge = isWebsiteOrder ? `<span class="badge bg-success-subtle text-success border border-success-subtle px-1 fw-bold" style="font-size:11px;">WEB</span>` : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-1 fw-bold" style="font-size:11px;">DIRECT</span>`;
+            
+            tbody.innerHTML += `<tr style="${rowSourceStyle}">
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <b style="color: #ffffff !important; font-size: 15px;">${lic.ownerName}</b> 
+                        ${sourceBadge}
+                    </div>
+                    <small class="text-primary fw-bold font-monospace">${lic.licenseKey}</small><br>
+                    <small class="text-muted" style="font-size:11px;">${lic.ownerEmail || 'No Verified Email Registered'}</small>
+                </td>
+                <td><span class="text-uppercase font-monospace text-warning fw-bold">${lic.planId}</span><br><small class="text-muted">₹${lic.price}/mo</small></td>
+                <td style="color: #ffffff !important;" class="font-monospace">${lic.expiryDate || 'Unlimited Node'}</td>
+                <td>${badge}</td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="sendWhatsAppReminder('${key}', '${lic.ownerName}', '${lic.planId}', '${lic.price}', '${lic.expiryDate}')"><i class="fab fa-whatsapp"></i> Bill</button>
+                    <button class="btn btn-sm btn-warning me-1" onclick="toggleOwnerLock('${key}', '${lic.status}')"><i class="fas fa-power-off"></i> Lock</button>
+                    <button class="btn btn-sm btn-danger" onclick="purgeOwnerNodeCompletely('${key}')"><i class="fas fa-trash-alt"></i> Drop</button>
+                </td>
+            </tr>`;
+        });
+        
+        document.getElementById('stat_totalOwners').innerText = act + lck;
+        document.getElementById('stat_totalRevenue').innerText = "₹" + rev;
+        document.getElementById('stat_totalBranches').innerText = totalBranches;
+        document.getElementById('stat_totalStudents').innerText = totalStudents;
+        if((act + lck) === 0) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">No enterprise system deployments loaded.</td></tr>`;
+    }
+
+    function renderBlacklistRegistry() {
+        const box = document.getElementById('blacklistLiveStream'); box.innerHTML = '';
+        if(Object.keys(activeBlacklistData).length === 0) { box.innerHTML = `<div class="text-center text-muted py-3 w-100">Blacklist engine network is secure.</div>`; return; }
+        Object.keys(activeBlacklistData).forEach(k => {
+            const b = activeBlacklistData[k];
+            box.innerHTML += `<div class="col-md-6"><div class="blacklist-item d-flex justify-content-between align-items-center"><div><b class="text-danger">⚠️ ${b.name}</b><br><small style="color: #cbd5e1 !important;">Reason: ${b.reason}</small></div><button class="btn btn-sm btn-outline-success border-0" onclick="adminPurgeBlacklistRecord('${k}')"><i class="fas fa-check"></i> Clean</button></div></div>`;
+        });
+    }
+
+    // ಪ್ರಿಂಟ್ ಬಟನ್ ಮಾಸ್ಟರ್ ಇಂಜಿನ್ ಕ್ಲಿಕ್ ಹ್ಯಾಂಡ್ಲರ್
+    document.getElementById('btnPrintWebOrders').addEventListener('click', () => {
+        const printArea = document.getElementById('printDumpArea');
+        printArea.innerHTML = ''; 
+
+        let tableRowsHtml = '';
+        let slNo = 1;
+
+        Object.keys(globalOwnersCachedData).forEach(key => {
+            if(key.startsWith("HUDKO_WEB_")) {
+                const lic = globalOwnersCachedData[key].license;
+                if(lic) {
+                    tableRowsHtml += `
+                        <tr>
+                            <td>${slNo++}</td>
+                            <td><b>${lic.ownerName}</b></td>
+                            <td>${lic.ownerEmail || 'N/A'}</td>
+                            <td style="font-family: monospace;"><b>${lic.licenseKey}</b></td>
+                            <td style="text-transform: uppercase;">${lic.planId} (₹${lic.price})</td>
+                            <td>${lic.expiryDate || 'N/A'}</td>
+                            <td>${lic.status}</td>
+                        </tr>
+                    `;
+                }
+            }
+        });
+
+        if(tableRowsHtml === '') {
+            return alert("ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಪ್ರಸ್ತುತ ಯಾವುದೇ ವೆಬ್‌ಸೈಟ್ ಆಟೋಮ್ಯಾಟಿಕ್ ಅಪ್ಲಿಕೇಶನ್‌ಗಳು ಲಭ್ಯವಿಲ್ಲ!");
+        }
+
+        printArea.innerHTML = `
+            <div class="print-header">
+                <h2>HUDKO MEDIA ENTERPRISE TECHNOLOGY CORE</h2>
+                <p><b>AUTOMATIC WEBSITE ORDERS - CLIENT REGISTRATION REPORT</b></p>
+                <p style="font-size: 12px;">System Report Generated On: ${new Date().toLocaleString()} | Total System Records: ${slNo - 1}</p>
+            </div>
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th>Sl No</th>
+                        <th>Owner & PG Details</th>
+                        <th>Email ID</th>
+                        <th>Generated License Key</th>
+                        <th>Subscribed Plan</th>
+                        <th>Terminus Expiry</th>
+                        <th>Deployment Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHtml}
+                </tbody>
+            </table>
+        `;
+
+        window.print();
+    });
+</script>
+</body>
+</html>
